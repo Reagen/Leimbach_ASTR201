@@ -26,21 +26,30 @@ def bb_func(wavelength, temperature, radius, distance):
 
     constants = 2 * h_cgs * (c_cgs ** 2)
     frac = radius**2/distance**2     # for testing *(units.pc)**2
-    print(constants * frac * (1 / wavelength ** 5) \
-        * (1/(np.exp((h_cgs*c_cgs)/(wavelength*temperature*kB_cgs)) - 1)))
     return constants * frac * (1 / wavelength ** 5) \
         * (1/(np.exp((h_cgs*c_cgs)/(wavelength*temperature*kB_cgs)) - 1))
 
-def bb_func_part4(wavelength, temperature, radius, distance, absorption):
-    h_cgs = h.to(units.erg * units.s)
-    c_cgs = c.to(units.cm / units.s)
-    kB_cgs = k_B.to(units.erg / units.K)
+def bb_func_part4(wavelength):
+    '''
+    This is the blackbody function I used to integrate for part D. I found that it was easier to do the computing without
+    units and manually check my units for each function.
+    :param wavelength:
+    :return: integrand for part D integral
+    '''
+    h_cgs = 6.62607015E-27
+    c_cgs = 29979245800.0
+    kB_cgs = 1.380649E-16
 
-    constants = 2 * h_cgs.value * (c_cgs.value ** 2)
-    print('Wavelength', wavelength)
-    frac = radius ** 2 / distance ** 2  # for testing *(units.pc)**2
-    bbfunction = (constants * frac.value * (1 / wavelength ** 5) * (1 / (np.exp((h_cgs.value * c_cgs.value) / (wavelength * temperature.value * kB_cgs.value)) - 1)))
-    return bbfunction*absorption
+    constants = 2 * h_cgs * (c_cgs ** 2)
+    temp = 3000
+    radius = 1.E7
+    distance = 1.5E15
+    tau = (c_cgs /wavelength)* (1/3E14)
+    absorption_part = (1 - np.exp(-tau))
+    frac = radius ** 2 / distance ** 2
+    bbfunction = (constants * frac * (1 / wavelength ** 5) * (1 / (np.exp((h_cgs * c_cgs) / (wavelength * temp * kB_cgs)) - 1)))
+
+    return bbfunction*absorption_part
 
 def part_a(wavelength, temperature, radius, distance, title):
     '''
@@ -54,7 +63,7 @@ def part_a(wavelength, temperature, radius, distance, title):
     '''
     # Equation 1.52 from our textbook
     bb_parta = bb_func(wavelength, temperature, radius, distance)
-    print('bb_func: ', bb_parta)
+    #print('bb_func: ', bb_parta)
 
     # Plotting
     fig, ax = plt.subplots()
@@ -89,7 +98,7 @@ def part_b(wavelength, temperatures, radius, distance, titles):
 
     #Looping over the three different combinations
     for ii in range(loop1):
-        print(ii)
+        #print(ii)
         radius1 = radius[ii, 0]*units.pc
         radius2 = radius[ii, 1]*units.pc
         fig, ax = plt.subplots()
@@ -119,31 +128,60 @@ def part_b(wavelength, temperatures, radius, distance, titles):
 
     #plt.show()
 
-def part_cd(wavelength, temperature, radius, distance, title):
+def part_cd():
     '''
+    Calculate the temperature by integrating over the flux of the blackbody and using the Stephan Boltzmann equation
+    to calculate T.
+    :return: None
+    '''
+    sb_const = sigma_sb.to(units.erg/units.cm**2/units.s/units.K**4)
 
-    :param wavelength:
-    :param temperature:
-    :param radius:
-    :param distance:
-    :param title:
+    int_tot = quad(bb_func_part4, 0, np.inf)
+    print('integral:', int_tot)
+    final_temp = (int_tot/(2*sb_const.value))**(-1/4)
+    print('final temp:', final_temp)
+
+def part_e(wavelength):
+    '''
+    :param wavelength: array of wavelength values
     :return:
     '''
-    #print(wavelength, temperature, radius, distance)
-    bb_partc = bb_func(wavelength, temperature, radius, distance)
+    # Constants (found in textbook)
+    h_cgs = h.to(units.erg * units.s)
     c_cgs = c.to(units.cm / units.s)
-    sb_const = sigma_sb.to(units.erg/units.cm**2/units.s/units.K**4)
-    #print(sb_const)
-    tau = c_cgs/((3*10**14*units.Hz)*wavelength)
-    #print('tau', tau)
-    absorption_part = (1-np.exp(-tau))
+    kB_cgs = k_B.to(units.erg / units.K)
 
-    integrate = quad(bb_func_part4, 0, np.inf, args=(temperature.value, radius.value, distance.value, absorption_part))
+    tau = (c_cgs / wavelength) * (1 / 3E14*units.s)
 
-    #flux = np.trapz(integrand)
-    print(integrate)
-    temp = (integrate/(2*sb_const))**(-1/4)
-    print(temp)
+    temp_star = 3000*units.K
+    radius_star = 5 * radius_sun
+    print("Radius star: ", radius_star)
+    distance = 10 *units.pc
+
+    temp_cloud = 3000*units.K
+    radius_cloud1 = 100*units.au
+    radius_cloud2 = radius_cloud1.to(units.pc)
+
+    star = bb_func(wavelength, temp_star, radius_star, distance)
+    star_spec = star*np.exp(-tau)
+    cloud = bb_func(wavelength, temp_cloud, radius_cloud2, distance)
+    cloud_spec = cloud*(1-np.exp(-tau))
+
+    sum_spec = star_spec + cloud_spec
+
+    # Plotting
+    fig, ax = plt.subplots()
+    ax.plot(wavelength, sum_spec, 'k', label='Full Solution')
+    ax.plot(wavelength, star_spec, 'g', ls='dashed', label = 'Blackbody of Star')
+    ax.plot(wavelength, cloud_spec, 'b', ls='dashed', label = 'Blackbody of Cloud')
+    ax.legend()
+    ax.invert_xaxis()
+    ax.set_xscale('log')
+    ax.set_yscale('log')
+    ax.set_xlabel('Wavelength (cm)')
+    ax.set_ylabel('Flux Density (erg/(s*cm^3)')
+
+    plt.show()
 
 
 # Constants and defined variables
@@ -159,7 +197,7 @@ radius_ns_org = 5*units.km # We learned in our Survey of Astronomy class that a 
 radius_ns = radius_ns_org.to(units.pc)
 distance = 10*units.pc
 temp_c = 3000*units.K
-radius_c = 5*radius_sun
+#radius_c = 5*radius_sun
 distance_c_au = 100*units.au
 distance_c = distance_c_au.to(units.pc)
 #Citations for unknown temperatures given in write-up
@@ -171,13 +209,8 @@ radius_b = np.array([[radius_sun.value, 0.1*radius_sun.value],
                      [0.1*radius_sun.value, radius_wd.value],
                      [radius_arcturus.value, radius_ns.value]])
 
-
+# Running Functions for different questions in homework
 #part_a(wavelength_cm, temperature_a, radius_sun, distance, title="Part a")
 #part_b(wavelength_cm, temperature_b, radius_b, distance, titles=["Bullet Point 1", "Bullet Point 2", "Bullet Point 3"])
-part_cd(wavelength_cm, temp_c, radius_c, distance_c, title="Part c")
-
-
-'''wavelength2 = np.arange(0.0001,100000, 0.1) * units.um
-wavelength_cm2 = wavelength.to(units.cm)
-
-part_a(wavelength_cm2, 1000000*units.K, radius_ns.value, distance, title="test")'''
+#part_cd()
+part_e(wavelength_cm)
