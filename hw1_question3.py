@@ -158,7 +158,7 @@ def part_e(wavelength):
     print("Radius star: ", radius_star)
     distance = 10 *units.pc
 
-    temp_cloud = 3000*units.K
+    temp_cloud = 55*units.K
     radius_cloud1 = 100*units.au
     radius_cloud2 = radius_cloud1.to(units.pc)
 
