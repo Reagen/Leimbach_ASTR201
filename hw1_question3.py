@@ -143,8 +143,9 @@ def part_cd():
 
 def part_e(wavelength):
     '''
+    Plots the Radiative transfer equation for the protostar and cloud system
     :param wavelength: array of wavelength values
-    :return:
+    :return: None
     '''
     # Constants (found in textbook)
     h_cgs = h.to(units.erg * units.s)
@@ -210,7 +211,7 @@ radius_b = np.array([[radius_sun.value, 0.1*radius_sun.value],
                      [radius_arcturus.value, radius_ns.value]])
 
 # Running Functions for different questions in homework
-#part_a(wavelength_cm, temperature_a, radius_sun, distance, title="Part a")
-#part_b(wavelength_cm, temperature_b, radius_b, distance, titles=["Bullet Point 1", "Bullet Point 2", "Bullet Point 3"])
-#part_cd()
+part_a(wavelength_cm, temperature_a, radius_sun, distance, title="Part a")
+part_b(wavelength_cm, temperature_b, radius_b, distance, titles=["Bullet Point 1", "Bullet Point 2", "Bullet Point 3"])
+part_cd()
 part_e(wavelength_cm)
